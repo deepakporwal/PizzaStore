@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PizzaStore.GraphQL;
 using PizzaStore.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -74,6 +75,11 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// Add GraphQL Server services and register the Query type
+builder.Services
+    .AddGraphQLServer()
+    .AddQueryType<Query>(); // Hot Chocolate auto-discovers methods like 'GetProducts' as fields
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -87,6 +93,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Map the GraphQL HTTP endpoint (Defaults to /graphql)
+app.MapGraphQL();
 
 // Request / response logging middleware
 app.Use(async (context, next) =>
