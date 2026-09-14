@@ -1,0 +1,185 @@
+opencollection: 1.0.0
+info:
+  name: Sample API Collection
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ''
+      port: ''
+      auth:
+        username: ''
+        password: ''
+      bypassProxy: ''
+  environments:
+    - name: dev
+      variables:
+        - name: baseUrl
+          value: http://localhost:8070
+    - name: local
+      variables:
+        - name: baseUrl
+          value: http://localhost:5165
+items:
+  - info:
+      name: Get Users
+      type: http
+      seq: 1
+    http:
+      method: GET
+      url: https://jsonplaceholder.typicode.com/users
+    settings:
+      encodeUrl: true
+      timeout: 0
+      followRedirects: true
+      maxRedirects: 5
+      forwardAuthorizationHeader: true
+    docs: This request retrieves a list of users from the JSONPlaceholder API.
+  - info:
+      name: Pizza API
+      type: folder
+      seq: 2
+    request:
+      auth: inherit
+    items:
+      - info:
+          name: Get Pizza
+          type: http
+          seq: 1
+        http:
+          method: GET
+          url: '{{baseUrl}}/pizzas'
+          auth:
+            type: bearer
+            token: '{{authToken}}'
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+          forwardAuthorizationHeader: false
+      - info:
+          name: Get Health Check
+          type: http
+          seq: 3
+        http:
+          method: GET
+          url: '{{baseUrl}}/health'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+          forwardAuthorizationHeader: false
+      - info:
+          name: Post Pizza
+          type: http
+          seq: 4
+        http:
+          method: POST
+          url: '{{baseUrl}}/pizza'
+          body:
+            type: json
+            data: |-
+              {
+                "id": 4,
+                "name": "Country Special",
+                "description": "Country special with peepy panner"
+              }
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+          forwardAuthorizationHeader: false
+      - info:
+          name: Get Pizza By Id
+          type: http
+          seq: 5
+        http:
+          method: GET
+          url: '{{baseUrl}}/pizza/3'
+          auth:
+            type: bearer
+            token: '{{authToken}}'
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+          forwardAuthorizationHeader: false
+      - info:
+          name: Put Pizza
+          type: http
+          seq: 6
+        http:
+          method: PUT
+          url: '{{baseUrl}}/pizza/3'
+          body:
+            type: json
+            data: |-
+              {
+                "id": 3,
+                "name": "Cheese Corn Pizza",
+                "description": "Cheese Corn Pizza with chilly flakes and black pepper."
+              }
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+          forwardAuthorizationHeader: false
+      - info:
+          name: Delete Pizza By Id
+          type: http
+          seq: 7
+        http:
+          method: DELETE
+          url: '{{baseUrl}}/pizza/4'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+          forwardAuthorizationHeader: false
+      - info:
+          name: Login
+          type: http
+          seq: 1
+        http:
+          method: POST
+          url: http://localhost:5165/login
+          body:
+            type: json
+            data: |-
+              {
+                "username": "admin",
+                "password": "password"
+              }
+          auth: inherit
+        runtime:
+          scripts:
+            - type: after-response
+              code: |-
+                if (res.status === 200 && res.body.token) {
+                    bru.setVar("authToken", res.body.token);
+                }
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+          forwardAuthorizationHeader: false
+bundled: true
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git
+    exportedAt: '2026-09-14T13:05:51.499Z'
+    exportedUsing: Bruno
