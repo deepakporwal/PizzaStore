@@ -75,6 +75,18 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// CORS - allow the frontend application at http://localhost:3000
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocal3000", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // Add GraphQL Server services and register the Query type
 builder.Services
     .AddGraphQLServer()
@@ -90,6 +102,9 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "PizzaStore API V1");
     });
 }
+
+// Enable CORS for the configured frontend before authentication/authorization
+app.UseCors("AllowLocal3000");
 
 app.UseAuthentication();
 app.UseAuthorization();
