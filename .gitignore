@@ -1,0 +1,76 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+[Ll]og/
+[Ll]ogs/
+x64/
+x86/
+[Aa]rtifacts/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+*.userprefs
+*.pdb
+*.cache
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.vspscc
+*.vssscc
+*.publish.xml
+*.psess
+*.vsp
+*.vspx
+*.sap
+*.opendb
+*.VC.db
+*.VC.VC.opendb
+
+# .NET Core / ASP.NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+*.nuget.props
+*.nuget.targets
+
+# Rider / JetBrains
+.idea/
+*.iml
+
+# Misc
+*.swp
+*.swo
+*~
+App_Data/
