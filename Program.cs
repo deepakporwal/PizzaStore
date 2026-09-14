@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -87,16 +88,48 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/", () => "Hello World!");
-app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }));
-
-var generateToken = (LoginRequest request) =>
+// Request / response logging middleware
+app.Use(async (context, next) =>
 {
+    var logger = app.Logger;
+    var sw = Stopwatch.StartNew();
+    try
+    {
+        logger.LogInformation("Incoming HTTP {Method} {Path} from {RemoteIp}", context.Request.Method, context.Request.Path, context.Connection.RemoteIpAddress);
+        await next();
+        sw.Stop();
+        logger.LogInformation("HTTP {Method} {Path} responded {StatusCode} in {ElapsedMilliseconds}ms", context.Request.Method, context.Request.Path, context.Response.StatusCode, sw.ElapsedMilliseconds);
+    }
+    catch (Exception ex)
+    {
+        sw.Stop();
+        logger.LogError(ex, "Unhandled exception for HTTP {Method} {Path} after {ElapsedMilliseconds}ms", context.Request.Method, context.Request.Path, sw.ElapsedMilliseconds);
+        throw;
+    }
+});
+
+app.MapGet("/", (ILogger<Program> logger) =>
+{
+    logger.LogInformation("Root endpoint hit");
+    return "Hello World!";
+});
+
+app.MapGet("/health", (ILogger<Program> logger) =>
+{
+    logger.LogInformation("Health check endpoint hit");
+    return Results.Ok(new { status = "Healthy" });
+});
+
+var generateToken = (LoginRequest request, ILogger<Program> logger) =>
+{
+    logger.LogInformation("Authentication attempt for user '{Username}'", request.Username);
+
     if (string.IsNullOrWhiteSpace(request.Username) ||
         string.IsNullOrWhiteSpace(request.Password) ||
         !request.Username.Equals("admin", StringComparison.OrdinalIgnoreCase) ||
         !request.Password.Equals("password", StringComparison.OrdinalIgnoreCase))
     {
+        logger.LogWarning("Authentication failed for user '{Username}'", request.Username);
         return Results.Unauthorized();
     }
 
@@ -119,6 +152,8 @@ var generateToken = (LoginRequest request) =>
 
     var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
+    logger.LogInformation("Authentication succeeded for user '{Username}'", request.Username);
+
     return Results.Ok(new { token = tokenString });
 };
 
@@ -133,40 +168,68 @@ app.MapPost("/login", generateToken)
     .WithSummary("Login and generate JWT token")
     .WithTags("Authentication");
 
-app.MapGet("/pizzas", async (PizzaDb db) => await db.Pizzas.ToListAsync())
+app.MapGet("/pizzas", async (PizzaDb db, ILogger<Program> logger) =>
+{
+    logger.LogInformation("Fetching all pizzas");
+    var pizzas = await db.Pizzas.ToListAsync();
+    logger.LogInformation("Fetched {Count} pizzas", pizzas.Count);
+    return pizzas;
+})
     .RequireAuthorization();
 
-app.MapPost("/pizza", async (PizzaDb db, Pizza pizza) =>
+app.MapPost("/pizza", async (PizzaDb db, Pizza pizza, ILogger<Program> logger) =>
 {
+    logger.LogInformation("Creating pizza with name '{Name}'", pizza.Name);
     await db.Pizzas.AddAsync(pizza);
     await db.SaveChangesAsync();
+    logger.LogInformation("Created pizza with id {Id}", pizza.Id);
     return Results.Created($"/pizza/{pizza.Id}", pizza);
 }).RequireAuthorization();
 
-app.MapGet("/pizza/{id}", async (PizzaDb db, int id) => await db.Pizzas.FindAsync(id))
+app.MapGet("/pizza/{id}", async (PizzaDb db, int id, ILogger<Program> logger) =>
+{
+    logger.LogInformation("Fetching pizza {Id}", id);
+    var pizza = await db.Pizzas.FindAsync(id);
+    if (pizza is null)
+    {
+        logger.LogWarning("Pizza {Id} not found", id);
+        return Results.NotFound();
+    }
+    logger.LogInformation("Found pizza {Id}", id);
+    return Results.Ok(pizza);
+})
     .RequireAuthorization();
 
-app.MapPut("/pizza/{id}", async (PizzaDb db, Pizza updatepizza, int id) =>
+app.MapPut("/pizza/{id}", async (PizzaDb db, Pizza updatepizza, int id, ILogger<Program> logger) =>
 {
+    logger.LogInformation("Updating pizza {Id}", id);
     var pizza = await db.Pizzas.FindAsync(id);
-    if (pizza is null) return Results.NotFound();
+    if (pizza is null)
+    {
+        logger.LogWarning("Pizza {Id} not found for update", id);
+        return Results.NotFound();
+    }
 
     pizza.Name = updatepizza.Name;
     pizza.Description = updatepizza.Description;
     await db.SaveChangesAsync();
+    logger.LogInformation("Updated pizza {Id}", id);
     return Results.NoContent();
 }).RequireAuthorization();
 
-app.MapDelete("/pizza/{id}", async (PizzaDb db, int id) =>
+app.MapDelete("/pizza/{id}", async (PizzaDb db, int id, ILogger<Program> logger) =>
 {
+    logger.LogInformation("Deleting pizza {Id}", id);
     var pizza = await db.Pizzas.FindAsync(id);
     if (pizza is null)
     {
+        logger.LogWarning("Pizza {Id} not found for delete", id);
         return Results.NotFound();
     }
 
     db.Pizzas.Remove(pizza);
     await db.SaveChangesAsync();
+    logger.LogInformation("Deleted pizza {Id}", id);
     return Results.Ok();
 }).RequireAuthorization();
 
