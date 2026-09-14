@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PizzaStore.GraphQL;
+using PizzaStore.Middleware;
 using PizzaStore.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -94,12 +95,21 @@ builder.Services
 
 var app = builder.Build();
 
+// Global custom middleware: Time Tracking & Exception Handling
+app.UseRequestTimeTracking();
+app.UseCustomExceptionHandling();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "PizzaStore API V1");
+    });
+
+    app.MapGet("/test-exception", () =>
+    {
+        throw new InvalidOperationException("Test exception triggered to verify ExceptionHandlingMiddleware.");
     });
 }
 
@@ -111,26 +121,6 @@ app.UseAuthorization();
 
 // Map the GraphQL HTTP endpoint (Defaults to /graphql)
 app.MapGraphQL();
-
-// Request / response logging middleware
-app.Use(async (context, next) =>
-{
-    var logger = app.Logger;
-    var sw = Stopwatch.StartNew();
-    try
-    {
-        logger.LogInformation("Incoming HTTP {Method} {Path} from {RemoteIp}", context.Request.Method, context.Request.Path, context.Connection.RemoteIpAddress);
-        await next();
-        sw.Stop();
-        logger.LogInformation("HTTP {Method} {Path} responded {StatusCode} in {ElapsedMilliseconds}ms", context.Request.Method, context.Request.Path, context.Response.StatusCode, sw.ElapsedMilliseconds);
-    }
-    catch (Exception ex)
-    {
-        sw.Stop();
-        logger.LogError(ex, "Unhandled exception for HTTP {Method} {Path} after {ElapsedMilliseconds}ms", context.Request.Method, context.Request.Path, sw.ElapsedMilliseconds);
-        throw;
-    }
-});
 
 app.MapGet("/", (ILogger<Program> logger) =>
 {
