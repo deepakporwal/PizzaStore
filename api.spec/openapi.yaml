@@ -1,0 +1,224 @@
+openapi: 3.0.3
+info:
+  title: PizzaStore API
+  description: Making the Pizzas you love
+  version: v1
+servers:
+  - url: http://localhost:5165
+paths:
+  /:
+    get:
+      summary: Root endpoint
+      responses:
+        '200':
+          description: Welcome message
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Hello World!
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: Healthy
+  /token:
+    post:
+      tags:
+        - Authentication
+      summary: Generate JWT token
+      description: Authenticates the demo admin user and returns a JWT token for use with the protected pizza endpoints.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: JWT token returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT access token
+        '401':
+          description: Unauthorized
+  /login:
+    post:
+      tags:
+        - Authentication
+      summary: Login and generate JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: JWT token returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Unauthorized
+  /pizzas:
+    get:
+      tags:
+        - Pizza
+      summary: Get all pizzas
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of pizzas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pizza'
+        '401':
+          description: Unauthorized
+  /pizza:
+    post:
+      tags:
+        - Pizza
+      summary: Create a pizza
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pizza'
+      responses:
+        '201':
+          description: Pizza created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pizza'
+        '401':
+          description: Unauthorized
+  /pizza/{id}:
+    get:
+      tags:
+        - Pizza
+      summary: Get a pizza by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Pizza record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pizza'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Pizza not found
+    put:
+      tags:
+        - Pizza
+      summary: Update a pizza by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pizza'
+      responses:
+        '204':
+          description: Pizza updated successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Pizza not found
+    delete:
+      tags:
+        - Pizza
+      summary: Delete a pizza by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Pizza deleted successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Pizza not found
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Authorization header using the Bearer scheme. Example: "Bearer {token}"
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          example: password
+    Pizza:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          example: 1
+        name:
+          type: string
+          nullable: true
+          example: Pepperoni
+        description:
+          type: string
+          nullable: true
+          example: Classic pepperoni pizza
